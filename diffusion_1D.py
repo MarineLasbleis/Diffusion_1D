@@ -1,5 +1,5 @@
 ### Diffusion_1D
-# Time-stamp: <2015-07-17 10:47:17 marine>
+# Time-stamp: <2015-07-21 09:33:37 marine>
 
 import numpy as np
 import scipy as sp
@@ -61,29 +61,60 @@ def CrankNicholson_dr2_order2(T,dr,k):
     return a, b, c, d
 
 
-def BoundaryConditions(T,a,b,c,d,BC,pos,type='Dir'):
+def BoundaryConditions(T,a,b,c,d,BC,position,typeBC='Dir', dx=0.,BC2=0.):
     '''
     Modify the a,b,c,d given the type of boundary conditions (Dirichlet by default)
     at the position specified by pos (top or bottom)
 
     BC is the value of the boundary conditions (a temperature in case of Dirichlet conditions, a flux in case of Neumann conditions)
+
+    typeBC = "Dir" T=BC
+    typeBC = "Neumann" dT/dx=BC, the step dx has to be specified
+    typeBC = "mix",  the values BC2 and dx have to be specified  dT/dx=BC+BC2*T
     '''
 
-    if type=='Dir':
-        ## if pos=="top":
+    ## if typeBC=='Dir':
+    ##     #temperature at the ghost point is directly BC
+    ##     Tghost = BC        
+    ## elif typeBC=='Neumann' or typeBC=='mix' :
+    ##     Tghost = T[2]-2.*dx*(BC+BC2*T[1])
+            
+    if position[0]=='t':
+        if typeBC=='Dir':
+            #temperature at the ghost point is directly BC
+            Tghost = BC
+            d[-2] = d[-2] -c[-2]*Tghost
+            a[-1], b[-1], c[-1], d[-1] = 0.,1.,0., Tghost     
+        elif typeBC=='Neumann' or typeBC=='mix' :
+            Tghost = T[-2]-2.*dx*(BC+BC2*T[-1])
+            d[-1] = d[-1] -c[-1]*Tghost
+      #  d[-2] = d[-2] -c[-2]*Tghost
+      #  a[-1], b[-1], c[-1], d[-1] = 0.,1.,0., Tghost
+           
+    elif position[0]=='b':
+
+        if typeBC=='Dir':
+            #temperature at the ghost point is directly BC
+            Tghost = BC
+            d[1] = d[1] -c[1]*Tghost
+            a[0], b[0], c[0], d[0] = 0., 1., 0., Tghost      
+        elif typeBC=='Neumann' or typeBC=='mix' :
+            Tghost = T[2]-2.*dx*(BC+BC2*T[1])
+            d[0] = d[0] -c[0]*Tghost
+        
+        
+        ## d[1] = d[1] -c[1]*Tghost
+        ## a[0], b[0], c[0], d[0] = 0., 1., 0., Tghost
+
+        # this was a first test for Dir boundary conditions
+        ## if pos=="top" or pos==-1:
         ##     d[-2] = d[-2] -c[-2]*BC
         ##     a[-1], b[-1], c[-1], d[-1] = 0.,1.,0., BC
-        ## if pos=="bottom":
+        ## if pos=="bottom" or pos==0:
         ##     d[1] = d[1] -c[1]*BC
         ##     a[0], b[0], c[0], d[0] = 0., 1., 0., BC
-
-        if pos=="top":
-            d[-1] = d[-1] -c[-1]*BC        
-        if pos=="bottom":
-            d[0] = d[0] -c[0]*BC
-          
-                
-    return a,b,c,d
+                          
+    return d
 
 
 
