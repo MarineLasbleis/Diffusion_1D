@@ -59,14 +59,20 @@ if Test=="1":
     T=T0*sum_truncated_init(x,10000,Lx)
     plt.plot(x,T)
 
+    #Boundary conditions
+    BC_0 = {"type":"Dir", "position":0, 'T0':0.}
+    BC_1 = {"type":"Dir", "position":-1, 'T0':0.}
+
+
+
     for it in xrange(1,nt):
 
-        a,b,c,d = CrankNicholson_dr2_order2(T,dr,k)
+        a,b,c,d = CrankNicholson_dr2_order2(T, dr, k)
         b = b+1/dt
         d = d+T/dt
         
-        d = BoundaryConditions(T,a,b,c,d,0,'top',typeBC='Dir', dx=0.,BC2=0.)
-        d = BoundaryConditions(T,a,b,c,d,0,'bottom',typeBC='Dir', dx=0.,BC2=0.)
+        d = BoundaryConditions(T, a, b, c, d, BC_0)
+        d = BoundaryConditions(T, a, b, c, d, BC_1)
 
         #a[0],b[0],c[0],d[0] = 0., -1.,1.,0.
         #a[-1],b[-1],c[-1],d[-1]=-1.,1.,0.,0.
@@ -163,6 +169,56 @@ elif Test=="2":
     print 'CFL - 1-2',  alpha*dt/dx12**2
     print 'CFL - 3',  alpha*dt/dx3**2
     
+    plt.show()
+
+elif Test == "3":
+
+    
+    Nz = 50#number of space steps
+    diffusivity = 1.
+    Nt = 100 #number of time steps printed
+    timeMax = 0.1
+
+    zmax = 0.
+    zmin = -3. #depth after wich we don't calculate
+
+    BC_0 = {'type':'Dir', 'T0':2., 'position':0}
+    BC_1 = {'type':'Dir', 'T0':3., 'position':-1}
+
+    # Initial conditions
+    z = np.linspace(zmin, zmax, Nz)
+    quantity = np.ones(Nz)
+    #quantity[0] = 0.
+    #quantity[-1] = 1.
+    quantity[BC_0['position']] = BC_0['T0']
+    quantity[BC_1['position']] = BC_1['T0']
+
+    plt.plot(z, quantity)
+
+    quantity_stock = np.zeros((Nz, Nt))
+    quantity_stock[:,0] = quantity
+
+    time = 0.
+    compteur_print = 1.
+
+    dx = np.amin(np.diff(z))
+    dt = 0.5*dx**2./diffusivity
+
+    Niterations = (timeMax - time)/dt
+
+    nn = 0
+    while time < timeMax:
+
+        nn += 1
+        print "iteration number: ", nn
+        print "time: ", time
+
+        # compute new quantity (temperature/composition) 
+        new_quantity = Solve_diffusion_cartesian(z, quantity, dx, dt, BC_0, BC_1, diffusivity)
+        time = time+dt
+        plt.plot(z, new_quantity)
+        quantity = new_quantity
+
     plt.show()
 
 
