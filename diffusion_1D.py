@@ -61,7 +61,7 @@ def CrankNicholson_dr2_order2(T,dr,k):
     return a, b, c, d
 
 
-def BoundaryConditions(T,a,b,c,d,BC,position,typeBC='Dir', dx=0.,BC2=0.):
+def BoundaryConditions(T,a,b,c,d,BC, dx=0.):
     '''
     Modify the a,b,c,d given the type of boundary conditions (Dirichlet by default)
     at the position specified by pos (top or bottom)
@@ -78,29 +78,35 @@ def BoundaryConditions(T,a,b,c,d,BC,position,typeBC='Dir', dx=0.,BC2=0.):
     ##     Tghost = BC        
     ## elif typeBC=='Neumann' or typeBC=='mix' :
     ##     Tghost = T[2]-2.*dx*(BC+BC2*T[1])
-            
-    if position[0]=='t':
+           
+    typeBC = BC["type"]
+
+    if BC['position']==-1:
         if typeBC=='Dir':
             #temperature at the ghost point is directly BC
-            Tghost = BC
-            d[-2] = d[-2] -c[-2]*Tghost
+            Tghost = BC['T0']
+            #d[-2] = d[-2] -c[-2]*Tghost
             a[-1], b[-1], c[-1], d[-1] = 0.,1.,0., Tghost     
         elif typeBC=='Neumann' or typeBC=='mix' :
-            Tghost = T[-2]-2.*dx*(BC+BC2*T[-1])
+            Tghost = T[-2]-2.*BC['dx']*(BC['T0']+BC['Tprim']*T[-1])
             d[-1] = d[-1] -c[-1]*Tghost
+        else: 
+            print "please choose boundary conditions type"
       #  d[-2] = d[-2] -c[-2]*Tghost
       #  a[-1], b[-1], c[-1], d[-1] = 0.,1.,0., Tghost
            
-    elif position[0]=='b':
+    elif BC['position']==0:
 
         if typeBC=='Dir':
             #temperature at the ghost point is directly BC
-            Tghost = BC
-            d[1] = d[1] -c[1]*Tghost
+            Tghost = BC['T0']
+            #d[0] = d[0] -c[0]*Tghost
             a[0], b[0], c[0], d[0] = 0., 1., 0., Tghost      
         elif typeBC=='Neumann' or typeBC=='mix' :
-            Tghost = T[2]-2.*dx*(BC+BC2*T[1])
+            Tghost = T[2]-2.*BC['dx']*(BC['T0']+BC['Tprim']*T[1])
             d[0] = d[0] -c[0]*Tghost
+        else:
+            print "please choose boundary conditions type"
         
         
         ## d[1] = d[1] -c[1]*Tghost
@@ -116,6 +122,17 @@ def BoundaryConditions(T,a,b,c,d,BC,position,typeBC='Dir', dx=0.,BC2=0.):
                           
     return d
 
+
+
+
+def Solve_diffusion_cartesian(x,T,dx,dt,BC1,BC2,kappa):
+    a,b,c,d = CrankNicholson_dr2_order2(T,dx,kappa)
+    b = b+1/dt
+    d = d+T/dt
+    d = BoundaryConditions(T,a,b,c,d,BC1)
+    d = BoundaryConditions(T,a,b,c,d,BC2)
+    T = TDMAsolver(a, b, c, d)
+    return T
 
 
 
